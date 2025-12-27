@@ -5,6 +5,13 @@ console.log('🔥 BACKGROUND: Extension ID:', chrome.runtime.id || browser.runti
 const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
 console.log('🔥 BACKGROUND: Browser API available:', !!browserAPI);
 
+function isRestrictedUrl(url = '') {
+  return url.startsWith('about:') ||
+         url.startsWith('view-source:') ||
+         url.startsWith('chrome:') ||
+         url.startsWith('moz-extension:');
+}
+
 // Handle keyboard commands from manifest
 if (browserAPI.commands) {
   console.log('🔧 BACKGROUND: Setting up enhanced command listener...');
@@ -58,6 +65,16 @@ function openTabSwitcher() {
     if (tabs[0]) {
       const activeTab = tabs[0];
       console.log('📍 BACKGROUND: Active tab:', activeTab.url);
+      const activeUrl = activeTab.url || '';
+
+      // Restricted pages cannot be injected; open packaged UI instead
+      if (isRestrictedUrl(activeUrl)) {
+        console.log('⚠️ BACKGROUND: Restricted page, opening packaged switcher UI');
+        browserAPI.tabs.create({
+          url: browserAPI.runtime.getURL('switcher.html')
+        });
+        return;
+      }
       
       // Try to inject content script with the tab switcher UI
       browserAPI.tabs.executeScript(activeTab.id, {
@@ -177,7 +194,6 @@ function getTabSwitcherCode() {
       box-sizing: border-box;
     \`;
     searchBox.addEventListener('input', filterTabs);
-    searchBox.addEventListener('keydown', handleKeydown);
     header.appendChild(searchBox);
     popup.appendChild(header);
     

@@ -376,6 +376,15 @@ function switchToTab(tabId) {
     }
   });
   closePopup();
+  // If running from the packaged extension page, close that tab after switching
+  const protocol = window.location.protocol || '';
+  if (protocol === 'moz-extension:' || protocol === 'chrome-extension:') {
+    try {
+      window.close();
+    } catch (e) {
+      console.warn('⚠️ Unable to close switcher page tab:', e);
+    }
+  }
 }
 
 function closeTab(tabId, index) {
